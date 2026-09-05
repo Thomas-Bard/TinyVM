@@ -1,5 +1,4 @@
 #include "cpu.hpp"
-#include <regex>
 
 #define CF_MASK 0b0000001
 #define ZF_MASK 0b0000010
@@ -39,12 +38,21 @@ namespace cpu
             return;
         }
 
-        // We need to check for overflow
-        uint16_t result = m_general_purpose_registers[reg1] + m_general_purpose_registers[reg2];
-        if (result < m_general_purpose_registers[reg1])
+        uint16_t a = m_general_purpose_registers[reg1];
+        uint16_t b = m_general_purpose_registers[reg2];
+        uint16_t result = a + b;
+
+        // CF: unsigned wrap-around
+        if (result < a)
+        {
+            m_flags = m_flags | CF_MASK;
+        }
+        // OF: signed overflow — both operands have the same sign but result differs
+        if (!((a ^ b) & 0x8000) && ((result ^ a) & 0x8000))
         {
             m_flags = m_flags | OF_MASK;
         }
+        // ZF
         if (result == 0)
         {
             m_flags = m_flags | ZF_MASK;
@@ -63,12 +71,20 @@ namespace cpu
             return;
         }
 
-        // We need to check for overflow
-        uint16_t result = m_general_purpose_registers[rs] + imm;
-        if (result < m_general_purpose_registers[rs])
+        uint16_t a = m_general_purpose_registers[rs];
+        uint16_t result = a + imm;
+
+        // CF: unsigned wrap-around
+        if (result < a)
+        {
+            m_flags = m_flags | CF_MASK;
+        }
+        // OF: signed overflow — both operands share the same sign but result sign differs
+        if (!((a ^ imm) & 0x8000) && ((result ^ a) & 0x8000))
         {
             m_flags = m_flags | OF_MASK;
         }
+        // ZF
         if (result == 0)
         {
             m_flags = m_flags | ZF_MASK;
@@ -88,12 +104,21 @@ namespace cpu
             return;
         }
 
-        // We need to check for overflow
-        uint16_t result = m_general_purpose_registers[reg1] - m_general_purpose_registers[reg2];
-        if (result > m_general_purpose_registers[reg1])
+        uint16_t a = m_general_purpose_registers[reg1];
+        uint16_t b = m_general_purpose_registers[reg2];
+        uint16_t result = a - b;
+
+        // CF: unsigned borrow
+        if (b > a)
+        {
+            m_flags = m_flags | CF_MASK;
+        }
+        // OF: signed overflow — operands have different signs and result sign differs from minuend
+        if (((a ^ b) & 0x8000) && ((result ^ a) & 0x8000))
         {
             m_flags = m_flags | OF_MASK;
         }
+        // ZF
         if (result == 0)
         {
             m_flags = m_flags | ZF_MASK;
@@ -112,12 +137,20 @@ namespace cpu
             return;
         }
 
-        // We need to check for overflow
-        uint16_t result = m_general_purpose_registers[rs] - imm;
-        if (result > m_general_purpose_registers[rs])
+        uint16_t a = m_general_purpose_registers[rs];
+        uint16_t result = a - imm;
+
+        // CF: unsigned borrow
+        if (imm > a)
+        {
+            m_flags = m_flags | CF_MASK;
+        }
+        // OF: signed overflow — operands have different signs and result sign differs from minuend
+        if (((a ^ imm) & 0x8000) && ((result ^ a) & 0x8000))
         {
             m_flags = m_flags | OF_MASK;
         }
+        // ZF
         if (result == 0)
         {
             m_flags = m_flags | ZF_MASK;
@@ -128,7 +161,7 @@ namespace cpu
     void CPU::m_adds(RegisterNumber reg1, RegisterNumber reg2, RegisterNumber reg3) noexcept
     {
         m_add(reg1, reg2, reg3);
-        // Set the sign flag if the result is negative
+        // SF: set if the result is negative (MSB set)
         if (m_general_purpose_registers[reg3] & 0x8000)
         {
             m_flags = m_flags | SF_MASK;
@@ -138,7 +171,7 @@ namespace cpu
     void CPU::m_subs(RegisterNumber reg1, RegisterNumber reg2, RegisterNumber reg3) noexcept
     {
         m_sub(reg1, reg2, reg3);
-        // Set the sign flag if the result is negative
+        // SF: set if the result is negative (MSB set)
         if (m_general_purpose_registers[reg3] & 0x8000)
         {
             m_flags = m_flags | SF_MASK;
@@ -148,6 +181,7 @@ namespace cpu
     void CPU::m_addsi(RegisterNumber rd, RegisterNumber rs, int16_t imm) noexcept
     {
         m_addi(rd, rs, static_cast<uint16_t>(imm));
+        // SF: set if the result is negative (MSB set)
         if (m_general_purpose_registers[rd] & 0x8000)
         {
             m_flags = m_flags | SF_MASK;
@@ -157,6 +191,7 @@ namespace cpu
     void CPU::m_subsi(RegisterNumber rd, RegisterNumber rs, int16_t imm) noexcept
     {
         m_subi(rd, rs, static_cast<uint16_t>(imm));
+        // SF: set if the result is negative (MSB set)
         if (m_general_purpose_registers[rd] & 0x8000)
         {
             m_flags = m_flags | SF_MASK;
@@ -182,8 +217,8 @@ namespace cpu
             return;
         }
 
-        uint16_t quotient = m_general_purpose_registers[rd] / m_general_purpose_registers[rm];
-        uint16_t remainder = m_general_purpose_registers[rd] % m_general_purpose_registers[rm];
+        uint16_t quotient = m_general_purpose_registers[rs] / m_general_purpose_registers[rm];
+        uint16_t remainder = m_general_purpose_registers[rs] % m_general_purpose_registers[rm];
         m_general_purpose_registers[rd] = quotient;
         m_general_purpose_registers[RH] = remainder;
 
@@ -234,15 +269,16 @@ namespace cpu
             return;
         }
 
-        uint32_t result = m_general_purpose_registers[reg1] * m_general_purpose_registers[reg2];
-        // Check for multiplication overflow
+        uint32_t result = static_cast<uint32_t>(m_general_purpose_registers[reg1]) * static_cast<uint32_t>(m_general_purpose_registers[reg2]);
+        // ZF
         if (result == 0)
         {
             m_flags = m_flags | ZF_MASK;
         }
-        else if (result > 0xFFFF)
+        // OF + CF: upper 16 bits are non-zero, result does not fit in 16 bits
+        if (result > 0xFFFF)
         {
-            m_flags = m_flags | OF_MASK;
+            m_flags = m_flags | OF_MASK | CF_MASK;
         }
         // truncate result to 16 bits
         m_general_purpose_registers[reg3] = static_cast<uint16_t>(result);
@@ -259,15 +295,16 @@ namespace cpu
             return;
         }
 
-        uint32_t result = m_general_purpose_registers[rs] * imm;
-        // Check for multiplication overflow
+        uint32_t result = static_cast<uint32_t>(m_general_purpose_registers[rs]) * static_cast<uint32_t>(imm);
+        // ZF
         if (result == 0)
         {
             m_flags = m_flags | ZF_MASK;
         }
-        else if (result > 0xFFFF)
+        // OF + CF: upper 16 bits are non-zero, result does not fit in 16 bits
+        if (result > 0xFFFF)
         {
-            m_flags = m_flags | OF_MASK;
+            m_flags = m_flags | OF_MASK | CF_MASK;
         }
         // truncate result to 16 bits
         m_general_purpose_registers[rd] = static_cast<uint16_t>(result);
@@ -351,18 +388,21 @@ namespace cpu
             m_halt();
             return;
         }
-        int32_t result = static_cast<int32_t>(m_general_purpose_registers[r1]) * static_cast<int32_t>(m_general_purpose_registers[r2]);
+        int32_t result = static_cast<int32_t>(static_cast<int16_t>(m_general_purpose_registers[r1])) * static_cast<int32_t>(static_cast<int16_t>(m_general_purpose_registers[r2]));
+        // ZF
         if (result == 0)
         {
             m_flags = m_flags | ZF_MASK;
         }
+        // SF: result is negative
         if (result < 0)
         {
             m_flags = m_flags | SF_MASK;
         }
-        if (result > 0xFFFF)
+        // OF + CF: result does not fit in a signed 16-bit value
+        if (result < -32768 || result > 32767)
         {
-            m_flags = m_flags | OF_MASK;
+            m_flags = m_flags | OF_MASK | CF_MASK;
         }
         m_general_purpose_registers[rd] = static_cast<uint16_t>(result);
     }
@@ -376,18 +416,21 @@ namespace cpu
             m_halt();
             return;
         }
-        int32_t result = static_cast<int32_t>(m_general_purpose_registers[rs]) * static_cast<int32_t>(imm);
+        int32_t result = static_cast<int32_t>(static_cast<int16_t>(m_general_purpose_registers[rs])) * static_cast<int32_t>(imm);
+        // ZF
         if (result == 0)
         {
             m_flags = m_flags | ZF_MASK;
         }
+        // SF: result is negative
         if (result < 0)
         {
             m_flags = m_flags | SF_MASK;
         }
-        if (result > 0xFFFF)
+        // OF + CF: result does not fit in a signed 16-bit value
+        if (result < -32768 || result > 32767)
         {
-            m_flags = m_flags | OF_MASK;
+            m_flags = m_flags | OF_MASK | CF_MASK;
         }
         m_general_purpose_registers[rd] = static_cast<uint16_t>(result);
     }
@@ -400,12 +443,21 @@ namespace cpu
             return;
         }
         uint16_t current = m_general_purpose_registers[reg];
-        m_general_purpose_registers[reg] = current + 1;
-        if (m_general_purpose_registers[reg] < current)
+        uint16_t result = current + 1;
+        m_general_purpose_registers[reg] = result;
+
+        // CF: unsigned wrap-around (0xFFFF + 1)
+        if (result < current)
+        {
+            m_flags = m_flags | CF_MASK;
+        }
+        // OF: signed overflow (0x7FFF + 1 wraps to negative)
+        if (current == 0x7FFF)
         {
             m_flags = m_flags | OF_MASK;
         }
-        if (m_general_purpose_registers[reg] == 0)
+        // ZF
+        if (result == 0)
         {
             m_flags = m_flags | ZF_MASK;
         }
@@ -419,12 +471,21 @@ namespace cpu
             return;
         }
         uint16_t current = m_general_purpose_registers[reg];
-        m_general_purpose_registers[reg] = current - 1;
-        if (m_general_purpose_registers[reg] > current)
+        uint16_t result = current - 1;
+        m_general_purpose_registers[reg] = result;
+
+        // CF: unsigned borrow (0x0000 - 1)
+        if (current == 0)
+        {
+            m_flags = m_flags | CF_MASK;
+        }
+        // OF: signed overflow (0x8000 - 1 wraps to positive)
+        if (current == 0x8000)
         {
             m_flags = m_flags | OF_MASK;
         }
-        if (m_general_purpose_registers[reg] == 0)
+        // ZF
+        if (result == 0)
         {
             m_flags = m_flags | ZF_MASK;
         }
@@ -438,7 +499,8 @@ namespace cpu
             m_halt();
             return;
         }
-        m_general_purpose_registers[rd] = m_general_purpose_registers[rs];
+
+        rd != SP_NBR ? m_general_purpose_registers[rd] : m_stack_pointer = m_general_purpose_registers[rs];
     }
     void CPU::m_movi(RegisterNumber rd, uint16_t imm) noexcept
     {
@@ -460,7 +522,7 @@ namespace cpu
             m_halt();
             return;
         }
-        m_memory_write_callback(m_general_purpose_registers[rs], m_general_purpose_registers[ra])
+        m_memory_write_callback(m_general_purpose_registers[rs], m_general_purpose_registers[ra]);
     }
     void CPU::m_ld(RegisterNumber rd, RegisterNumber ra) noexcept
     {
