@@ -624,4 +624,97 @@ namespace cpu
             m_program_counter = m_general_purpose_registers[reg];
         }
     }
+    void CPU::m_jnz(RegisterNumber reg) noexcept
+    {
+        if (reg >= m_general_purpose_registers.size())
+        {
+            m_flags = m_flags | II_MASK;
+            m_halt();
+            return;
+        }
+        if (!(m_flags & ZF_MASK))
+        {
+            m_program_counter = m_general_purpose_registers[reg];
+        }
+    }
+    void CPU::m_jc(RegisterNumber reg) noexcept
+    {
+        if (reg >= m_general_purpose_registers.size())
+        {
+            m_flags = m_flags | II_MASK;
+            m_halt();
+            return;
+        }
+        if (m_flags & CF_MASK)
+        {
+            m_program_counter = m_general_purpose_registers[reg];
+        }
+    }
+    void CPU::m_jnc(RegisterNumber reg) noexcept
+    {
+        if (reg >= m_general_purpose_registers.size())
+        {
+            m_flags = m_flags | II_MASK;
+            m_halt();
+            return;
+        }
+        if (!(m_flags & CF_MASK))
+        {
+            m_program_counter = m_general_purpose_registers[reg];
+        }
+    }
+    void CPU::m_ja(RegisterNumber reg) noexcept
+    {
+        if (reg >= m_general_purpose_registers.size())
+        {
+            m_flags = m_flags | II_MASK;
+            m_halt();
+            return;
+        }
+        if (!(m_flags & CF_MASK) && !(m_flags & ZF_MASK))
+        {
+            m_program_counter = m_general_purpose_registers[reg];
+        }
+    }
+    void CPU::m_jae(RegisterNumber reg) noexcept
+    {
+        if (reg >= m_general_purpose_registers.size())
+        {
+            m_flags = m_flags | II_MASK;
+            m_halt();
+            return;
+        }
+        if (!(m_flags & CF_MASK))
+        {
+            m_program_counter = m_general_purpose_registers[reg];
+        }
+    }
+
+    void CPU::m_jb(RegisterNumber reg) noexcept
+    {
+        if (reg >= m_general_purpose_registers.size())
+        {
+            m_flags = m_flags | II_MASK;
+            m_halt();
+            return;
+        }
+        if (m_flags & CF_MASK && !(m_flags & ZF_MASK))
+        {
+            m_program_counter = m_general_purpose_registers[reg];
+        }
+    }
+
+    void CPU::m_jbe(RegisterNumber reg) noexcept
+    {
+        if (reg >= m_general_purpose_registers.size())
+        {
+            m_flags = m_flags | II_MASK;
+            m_halt();
+            return;
+        }
+        if (m_flags & CF_MASK)
+        {
+            m_program_counter = m_general_purpose_registers[reg];
+        }
+    }
 }

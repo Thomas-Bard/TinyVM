@@ -53,13 +53,13 @@
 #define AND_OPCODE OPCODE("and", 0x28, 3)
 #define OR_OPCODE OPCODE("or", 0x29, 3)
 #define XOR_OPCODE OPCODE("xor", 0x2A, 3)
-#define NOT_OPCODE OPCODE("not", 0x2B, 2)
+#define NOT_OPCODE OPCODE("not", 0x2B, 1)
 #define SHR_OPCODE OPCODE("shr", 0x2C, 3)
 #define SHL_OPCODE OPCODE("shl", 0x2D, 3)
 
 #define CMP_OPCODE OPCODE("cmp", 0x2E, 2)
 #define TEST_OPCODE OPCODE("test", 0x2F, 2)
-#define CLF_OPCODE OPCODE("clf", 0x30, 1)
+#define CLF_OPCODE OPCODE("clf", 0x30, 0)
 #define LDI_OPCODE OPCODE("ldi", 0x31, 2)
 
 

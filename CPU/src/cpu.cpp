@@ -169,7 +169,7 @@ namespace cpu {
                 break;
             case STR_OPCODE.opcode:
                 m_str(static_cast<RegisterNumber>(helper::extract_operand(m_instruction_register, 0)),
-                      static_cast<uint16_t>(helper::extract_operand(m_instruction_register, 1)));
+                      static_cast<RegisterNumber>(helper::extract_operand(m_instruction_register, 1)));
                 break;
             case STRI_OPCODE.opcode:
                 m_stri(static_cast<RegisterNumber>(helper::extract_operand(m_instruction_register, 0)),
@@ -177,7 +177,7 @@ namespace cpu {
                 break;
             case LD_OPCODE.opcode:
                 m_ld(static_cast<RegisterNumber>(helper::extract_operand(m_instruction_register, 0)),
-                     static_cast<uint16_t>(helper::extract_operand(m_instruction_register, 1)));
+                     static_cast<RegisterNumber>(helper::extract_operand(m_instruction_register, 1)));
                 break;
             case LDI_OPCODE.opcode:
                 m_ldi(static_cast<RegisterNumber>(helper::extract_operand(m_instruction_register, 0)),
@@ -276,6 +276,10 @@ namespace cpu {
                 break;
             case CLF_OPCODE.opcode:
                 m_clf();
+                break;
+            default:
+                m_flags = m_flags | II_MASK;
+                m_halt();
                 break;
         }
     }
