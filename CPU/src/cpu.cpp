@@ -67,7 +67,7 @@ namespace cpu {
     {
         if (m_halted)
             return;
-        uint8_t opcode = (m_instruction_register & 0xFF00000000000000) >> 56;
+        uint8_t opcode = static_cast<uint8_t>((m_instruction_register & 0xFF00000000000000) >> 56);
         switch (opcode)
         {
             case HALT_OPCODE.opcode:

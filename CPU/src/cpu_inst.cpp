@@ -1,4 +1,5 @@
 #include "cpu.hpp"
+#include <cstdint>
 
 #define CF_MASK 0b0000001
 #define ZF_MASK 0b0000010
@@ -698,7 +699,7 @@ namespace cpu
             m_halt();
             return;
         }
-        if (m_flags & CF_MASK && !(m_flags & ZF_MASK))
+        if ((m_flags & CF_MASK) && !(m_flags & ZF_MASK))
         {
             m_program_counter = m_general_purpose_registers[reg];
         }
@@ -716,5 +717,152 @@ namespace cpu
         {
             m_program_counter = m_general_purpose_registers[reg];
         }
+    }
+
+    void CPU::m_je(RegisterNumber reg) noexcept
+    {
+        m_jz(reg);
+    }
+
+    void CPU::m_jne(RegisterNumber reg) noexcept
+    {
+        m_jnz(reg);
+    }
+
+    void CPU::m_and(RegisterNumber reg1, RegisterNumber reg2, RegisterNumber reg3) noexcept
+    {
+        if (reg1 >= m_general_purpose_registers.size() || reg2 >= m_general_purpose_registers.size() || reg3 >= m_general_purpose_registers.size())
+        {
+            m_flags = m_flags | II_MASK;
+            m_halt();
+            return;
+        }
+        m_general_purpose_registers[reg1] = m_general_purpose_registers[reg2] & m_general_purpose_registers[reg3];
+        if (m_general_purpose_registers[reg1] == 0)
+        {
+            m_flags = m_flags | ZF_MASK;
+        }
+    }
+
+    void CPU::m_or(RegisterNumber reg1, RegisterNumber reg2, RegisterNumber reg3) noexcept
+    {
+        if (reg1 >= m_general_purpose_registers.size() || reg2 >= m_general_purpose_registers.size() || reg3 >= m_general_purpose_registers.size())
+        {
+            m_flags = m_flags | II_MASK;
+            m_halt();
+            return;
+        }
+        m_general_purpose_registers[reg1] = m_general_purpose_registers[reg2] | m_general_purpose_registers[reg3];
+        if (m_general_purpose_registers[reg1] == 0)
+        {
+            m_flags = m_flags | ZF_MASK;
+        }
+    }
+
+    void CPU::m_xor(RegisterNumber reg1, RegisterNumber reg2, RegisterNumber reg3) noexcept
+    {
+        if (reg1 >= m_general_purpose_registers.size() || reg2 >= m_general_purpose_registers.size() || reg3 >= m_general_purpose_registers.size())
+        {
+            m_flags = m_flags | II_MASK;
+            m_halt();
+            return;
+        }
+        m_general_purpose_registers[reg1] = m_general_purpose_registers[reg2] ^ m_general_purpose_registers[reg3];
+        if (m_general_purpose_registers[reg1] == 0)
+        {
+            m_flags = m_flags | ZF_MASK;
+        }
+    }
+
+    void CPU::m_not(RegisterNumber reg) noexcept
+    {
+        if (reg >= m_general_purpose_registers.size())
+        {
+            m_flags = m_flags | II_MASK;
+            m_halt();
+            return;
+        }
+        m_general_purpose_registers[reg] = (uint16_t)~m_general_purpose_registers[reg];
+        if (m_general_purpose_registers[reg] == 0)
+        {
+            m_flags = m_flags | ZF_MASK;
+        }
+    }
+
+    void CPU::m_shl(RegisterNumber reg1, RegisterNumber reg2, RegisterNumber reg3) noexcept
+    {
+        if (reg1 >= m_general_purpose_registers.size() || reg2 >= m_general_purpose_registers.size() || reg3 >= m_general_purpose_registers.size())
+        {
+            m_flags = m_flags | II_MASK;
+            m_halt();
+            return;
+        }
+        uint32_t result = static_cast<uint32_t>(m_general_purpose_registers[reg2] << m_general_purpose_registers[reg3]);
+        if (result == 0)
+        {
+            m_flags = m_flags | ZF_MASK;
+        }
+        if (result > UINT16_MAX)
+        {
+            m_flags = m_flags | OF_MASK;
+        }
+        m_general_purpose_registers[reg1] = static_cast<uint16_t>(result);
+    }
+
+    void CPU::m_shr(RegisterNumber reg1, RegisterNumber reg2, RegisterNumber reg3) noexcept
+    {
+        if (reg1 >= m_general_purpose_registers.size() || reg2 >= m_general_purpose_registers.size() || reg3 >= m_general_purpose_registers.size())
+        {
+            m_flags = m_flags | II_MASK;
+            m_halt();
+            return;
+        }
+        uint32_t result = static_cast<uint32_t>(m_general_purpose_registers[reg2] >> m_general_purpose_registers[reg3]);
+        if (result == 0)
+        {
+            m_flags = m_flags | ZF_MASK;
+        }
+        if (result > UINT16_MAX)
+        {
+            m_flags = m_flags | OF_MASK;
+        }
+        m_general_purpose_registers[reg1] = static_cast<uint16_t>(result);
+    }
+
+    void CPU::m_cmp(RegisterNumber reg1, RegisterNumber reg2) noexcept
+    {
+        if (reg1 >= m_general_purpose_registers.size() || reg2 >= m_general_purpose_registers.size())
+        {
+            m_flags = m_flags | II_MASK;
+            m_halt();
+            return;
+        }
+        if (m_general_purpose_registers[reg1] == m_general_purpose_registers[reg2])
+        {
+            m_flags = m_flags | ZF_MASK;
+        }
+        if (m_general_purpose_registers[reg1] < m_general_purpose_registers[reg2])
+        {
+            m_flags = m_flags | CF_MASK;
+        }
+    }
+
+    void CPU::m_test(RegisterNumber reg1, RegisterNumber reg2) noexcept
+    {
+        if (reg1 >= m_general_purpose_registers.size() || reg2 >= m_general_purpose_registers.size())
+        {
+            m_flags = m_flags | II_MASK;
+            m_halt();
+            return;
+        }
+        if ((m_general_purpose_registers[reg1] & m_general_purpose_registers[reg2]) == 0)
+        {
+            m_flags = m_flags | ZF_MASK;
+        }
+    }
+
+    void CPU::m_clf(void) noexcept
+    {
+        m_flags = 0;
     }
 }
