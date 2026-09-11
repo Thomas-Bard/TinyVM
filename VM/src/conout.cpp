@@ -2,10 +2,10 @@
 #include <cstdint>
 
 namespace TinyVM::IO {
-    ConOut::ConOut(const uint16_t addr, uint16_t width, uint16_t height)
-        : IODevice(addr), _width(width), _height(height)
+    ConOut::ConOut(const uint16_t addr, uint16_t width, uint16_t height, std::unique_ptr<console::ConsoleRenderer> renderer)
+        : IODevice(addr), _width(width), _height(height), _renderer(std::move(renderer))
     {
-        _buffer = std::make_unique<uint8_t[]>(width * height);
+        _buffer = std::make_shared<char[]>(width * height);
         clear();
     }
 
@@ -51,12 +51,16 @@ namespace TinyVM::IO {
     void ConOut::putChar(char c) {
         if (_cursorX >= _width || _cursorY >= _height)
             return;
-        _buffer[_cursorX + _cursorY * _width] = static_cast<uint8_t>(c);
+        _buffer[_cursorX + _cursorY * _width] = c;
     }
     void ConOut::clear() {
         std::fill(_buffer.get(), _buffer.get() + _width * _height, 0);
     }
     void ConOut::display() {
-        // Called every frames
+        _renderer->render_frame(_buffer);
+    }
+
+    console::ConsoleRenderer* ConOut::getRenderer(void) {
+        return _renderer.get();
     }
 }

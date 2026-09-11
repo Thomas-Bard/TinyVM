@@ -24,6 +24,7 @@ namespace TinyVM {
             void addDevice(std::unique_ptr<IODevice> device);
             uint16_t read(const uint16_t address, const uint16_t port);
             void write(const uint16_t address, const uint16_t port, const uint16_t data);
+            IODevice* getDevice(const uint16_t address);
         private:
             std::vector<std::unique_ptr<IODevice>> m_devices;
         };

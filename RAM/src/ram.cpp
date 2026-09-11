@@ -26,4 +26,9 @@ namespace RAM
         }
         return m_memory[addr];
     }
+
+    std::vector<uint16_t>& RAM::get_memory() noexcept
+    {
+        return m_memory;
+    }
 }

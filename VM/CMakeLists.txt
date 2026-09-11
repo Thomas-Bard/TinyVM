@@ -13,17 +13,17 @@ target_include_directories(vm PRIVATE
 )
 
 # Find SDL3 and SDL3_ttf libraries
-find_package(SDL3 REQUIRED)
-find_package(SDL3_ttf REQUIRED)
+
 
 # Link against all libraries
-target_link_libraries(vm PRIVATE common cpu ram SDL3::SDL3 SDL3_ttf::SDL3_ttf)
+target_link_libraries(vm PRIVATE common cpu ram console)
 
 # Get include directories from linked libraries
 target_include_directories(vm PRIVATE
     $<TARGET_PROPERTY:common,INTERFACE_INCLUDE_DIRECTORIES>
     $<TARGET_PROPERTY:cpu,INTERFACE_INCLUDE_DIRECTORIES>
     $<TARGET_PROPERTY:ram,INTERFACE_INCLUDE_DIRECTORIES>
+    $<TARGET_PROPERTY:console,INTERFACE_INCLUDE_DIRECTORIES>
 )
 
 # Compiler options

@@ -9,7 +9,8 @@ namespace TinyVM::IO {
         : m_devices()
     {}
 
-    void IOManager::addDevice(std::unique_ptr<IODevice> device) {
+    void IOManager::addDevice(std::unique_ptr<IODevice> device)
+    {
         m_devices.push_back(std::move(device));
     }
 
@@ -29,5 +30,14 @@ namespace TinyVM::IO {
                 return;
             }
         }
+    }
+
+    IODevice* IOManager::getDevice(const uint16_t address) {
+        for (const auto& device : m_devices) {
+            if (device->address == address) {
+                return device.get();
+            }
+        }
+        return nullptr;
     }
 }

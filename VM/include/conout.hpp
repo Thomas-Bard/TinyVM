@@ -1,9 +1,10 @@
 #ifndef CONOUT_HPP
 #define CONOUT_HPP
 
+#include <algorithm>
 #include <cstdint>
 #include "io.hpp"
-
+#include "console.hpp"
 
 /* ConOut: Virtual Console output device */
 /* Address (VM-defined)
@@ -25,7 +26,7 @@ namespace TinyVM {
 
         class ConOut : public IODevice {
         public:
-            ConOut(uint16_t address, uint16_t width, uint16_t height);
+            ConOut(uint16_t address, uint16_t width, uint16_t height, std::unique_ptr<console::ConsoleRenderer> renderer);
             void write(uint16_t port, uint16_t value) override;
             uint16_t read(uint16_t port) override;
 
@@ -33,12 +34,15 @@ namespace TinyVM {
             void putChar(char c);
             void clear();
             void display();
+
+            console::ConsoleRenderer* getRenderer(void);
         private:
             uint16_t _cursorX;
             uint16_t _cursorY;
             uint16_t _width;
             uint16_t _height;
-            std::unique_ptr<uint8_t[]> _buffer;
+            std::shared_ptr<char[]> _buffer;
+            std::unique_ptr<console::ConsoleRenderer> _renderer;
         };
     }
 }

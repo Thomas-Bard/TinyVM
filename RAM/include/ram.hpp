@@ -21,6 +21,7 @@ namespace RAM
             RAM(uint16_t size) noexcept;
             void write(uint16_t addr, uint16_t data) noexcept;
             uint16_t read(uint16_t addr) noexcept;
+            std::vector<uint16_t>& get_memory() noexcept;
         private:
             std::vector<uint16_t> m_memory;
     };
