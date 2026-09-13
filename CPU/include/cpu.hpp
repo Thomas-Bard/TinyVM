@@ -29,6 +29,9 @@ namespace cpu
             bool has_exception(void) const noexcept;
             bool is_halted(void) const noexcept;
             void reset(void) noexcept;
+            uint16_t get_program_counter(void) const noexcept;
+            const std::array<uint16_t, 8>& get_registers(void) const noexcept;
+            uint64_t get_instruction_register(void) const noexcept;
         private:
             std::array<uint16_t, 8> m_general_purpose_registers;
             uint16_t m_program_counter;
@@ -43,6 +46,7 @@ namespace cpu
             PortReadCallback m_port_read_callback;
 
             bool m_halted;
+            bool m_override_inc;
 
             // == Instructions implementations ==
 
@@ -101,6 +105,10 @@ namespace cpu
             void m_test(RegisterNumber reg1, RegisterNumber reg2) noexcept;
             void m_clf() noexcept;
 
+            void m_msb(RegisterNumber dest, RegisterNumber src) noexcept;
+            void m_lsb(RegisterNumber dest, RegisterNumber src) noexcept;
+
+            void m_outi(uint16_t port, uint16_t addr, RegisterNumber data) noexcept;
             // == Helper functions ==
             void m_reset(void) noexcept;
             void m_fetch(void) noexcept;

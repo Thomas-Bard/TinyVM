@@ -18,7 +18,9 @@ namespace console
         : ConsoleRenderer(w, h), _font_path(font_path), _should_quit(false)
     {
         TTF_Init();
-        SDL_Init(SDL_INIT_VIDEO);
+        bool retval = SDL_Init(SDL_INIT_VIDEO);
+        if (!retval)
+        {} // Do nothing. We'll inspect in the debugger
         _window = SDL_CreateWindow("Console Output", DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT, 0);
         _renderer = SDL_CreateRenderer(_window, NULL);
         _font_size = 70;
@@ -61,10 +63,12 @@ namespace console
 
     void ConsoleRendererSDL::update()
     {
+        external_event_pending = false;
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_EVENT_QUIT) {
                 _should_quit = true;
+                external_event_pending = true;
             }
         }
     }

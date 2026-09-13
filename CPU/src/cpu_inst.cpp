@@ -525,6 +525,18 @@ namespace cpu
         }
         m_memory_write_callback(m_general_purpose_registers[rs], m_general_purpose_registers[ra]);
     }
+
+    void CPU::m_stri(RegisterNumber rd, uint16_t imm) noexcept
+    {
+        if (rd >= m_general_purpose_registers.size())
+        {
+            m_flags = m_flags | II_MASK;
+            m_halt();
+            return;
+        }
+        m_memory_write_callback(m_general_purpose_registers[rd], imm);
+    }
+
     void CPU::m_ld(RegisterNumber rd, RegisterNumber ra) noexcept
     {
         if (rd >= m_general_purpose_registers.size() ||
@@ -607,10 +619,12 @@ namespace cpu
             return;
         }
         m_program_counter = m_general_purpose_registers[reg];
+        m_override_inc = true;
     }
     void CPU::m_jmpi(uint16_t imm) noexcept
     {
         m_program_counter = imm;
+        m_override_inc = true;
     }
     void CPU::m_jz(RegisterNumber reg) noexcept
     {
@@ -623,6 +637,7 @@ namespace cpu
         if (m_flags & ZF_MASK)
         {
             m_program_counter = m_general_purpose_registers[reg];
+            m_override_inc = true;
         }
     }
     void CPU::m_jnz(RegisterNumber reg) noexcept
@@ -635,6 +650,7 @@ namespace cpu
         }
         if (!(m_flags & ZF_MASK))
         {
+            m_override_inc = true;
             m_program_counter = m_general_purpose_registers[reg];
         }
     }
@@ -648,6 +664,7 @@ namespace cpu
         }
         if (m_flags & CF_MASK)
         {
+            m_override_inc = true;
             m_program_counter = m_general_purpose_registers[reg];
         }
     }
@@ -661,6 +678,7 @@ namespace cpu
         }
         if (!(m_flags & CF_MASK))
         {
+            m_override_inc = true;
             m_program_counter = m_general_purpose_registers[reg];
         }
     }
@@ -674,6 +692,7 @@ namespace cpu
         }
         if (!(m_flags & CF_MASK) && !(m_flags & ZF_MASK))
         {
+            m_override_inc = true;
             m_program_counter = m_general_purpose_registers[reg];
         }
     }
@@ -687,6 +706,7 @@ namespace cpu
         }
         if (!(m_flags & CF_MASK))
         {
+            m_override_inc = true;
             m_program_counter = m_general_purpose_registers[reg];
         }
     }
@@ -701,6 +721,7 @@ namespace cpu
         }
         if ((m_flags & CF_MASK) && !(m_flags & ZF_MASK))
         {
+            m_override_inc = true;
             m_program_counter = m_general_purpose_registers[reg];
         }
     }
@@ -715,6 +736,7 @@ namespace cpu
         }
         if (m_flags & CF_MASK)
         {
+            m_override_inc = true;
             m_program_counter = m_general_purpose_registers[reg];
         }
     }
@@ -864,5 +886,42 @@ namespace cpu
     void CPU::m_clf(void) noexcept
     {
         m_flags = 0;
+    }
+
+    void CPU::m_msb(RegisterNumber dest, RegisterNumber src) noexcept
+    {
+        if (dest >= m_general_purpose_registers.size()
+            || src >= m_general_purpose_registers.size()
+        )
+        {
+            m_flags = m_flags | II_MASK;
+            m_halt();
+            return;
+        }
+        m_general_purpose_registers[dest] = (m_general_purpose_registers[src] & 0xFF00) >> 8;
+    }
+
+    void CPU::m_lsb(RegisterNumber dest, RegisterNumber src) noexcept
+    {
+        if (dest >= m_general_purpose_registers.size()
+            || src >= m_general_purpose_registers.size()
+        )
+        {
+            m_flags = m_flags | II_MASK;
+            m_halt();
+            return;
+        }
+        m_general_purpose_registers[dest] = (m_general_purpose_registers[src] & 0x00FF);
+    }
+
+    void CPU::m_outi(uint16_t port, uint16_t addr, RegisterNumber data) noexcept
+    {
+        if (data >= m_general_purpose_registers.size())
+        {
+            m_flags = m_flags | II_MASK;
+            m_halt();
+            return;
+        }
+        m_port_write_callback(static_cast<uint8_t>(port), addr, m_general_purpose_registers[data]);
     }
 }

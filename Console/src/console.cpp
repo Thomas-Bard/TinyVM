@@ -3,5 +3,5 @@
 
 namespace console {
     ConsoleRenderer::ConsoleRenderer(uint16_t w, uint16_t h)
-        : width(w), height(h) {}
+        : width(w), height(h), external_event_pending(false) {}
 }

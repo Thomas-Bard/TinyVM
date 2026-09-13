@@ -5,8 +5,8 @@ namespace TinyVM::IO {
         : address(addr)
     {}
 
-    IOManager::IOManager()
-        : m_devices()
+    IOManager::IOManager(ExternalEventHandler hndl)
+        : m_devices(), m_external_handler(hndl)
     {}
 
     void IOManager::addDevice(std::unique_ptr<IODevice> device)
@@ -23,7 +23,7 @@ namespace TinyVM::IO {
         return 0;
     }
 
-    void IOManager::write(const uint16_t address, const uint16_t port, const uint16_t data) {
+    void IOManager::write(const uint8_t port, const uint16_t address, const uint16_t data) {
         for (const auto& device : m_devices) {
             if (device->address == address) {
                 device->write(port, data);
@@ -39,5 +39,15 @@ namespace TinyVM::IO {
             }
         }
         return nullptr;
+    }
+
+    void IOManager::update_devices(void)
+    {
+        for (auto& device : m_devices)
+        {
+            device->update();
+            if (device->external_event_handling)
+                m_external_handler(device->address);
+        }
     }
 }

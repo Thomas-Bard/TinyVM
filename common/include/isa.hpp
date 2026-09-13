@@ -62,8 +62,10 @@
 #define CLF_OPCODE OPCODE("clf", 0x30, 0)
 #define LDI_OPCODE OPCODE("ldi", 0x31, 2)
 
+#define MSB_OPCODE OPCODE("msb", 0x32, 2)
+#define LSB_OPCODE OPCODE("lsb", 0x33, 2)
 
-
+#define OUTI_OPCODE OPCODE("outi", 0x34, 3)
 
 namespace isa
 {

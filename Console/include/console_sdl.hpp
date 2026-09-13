@@ -18,7 +18,7 @@ namespace console
         ~ConsoleRendererSDL();
         void render_frame(std::shared_ptr<char[]>) override;
         void clear() override;
-        void update();
+        void update() override;
         bool should_quit() const;
     private:
         std::vector<SDL_Surface*> _font_cache;

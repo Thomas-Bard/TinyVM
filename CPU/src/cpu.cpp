@@ -9,10 +9,12 @@
 
 #include "isa.hpp"
 
+// Warning people ! The memory is assumed to address individual words of 16 bits !! It is not assumed to be byte-addressable !!!!
+
 namespace helper {
     uint16_t extract_operand(uint64_t instruction, int index)
     {
-        return (instruction >> (index * 16)) & 0xFFFF;
+        return (instruction >> ((index + 1) * 16)) & 0xFFFF;
     }
 }
 
@@ -24,7 +26,8 @@ namespace cpu {
     : m_memory_write_callback(memory_write_callback),
       m_memory_read_callback(memory_read_callback),
       m_port_write_callback(port_write_callback),
-      m_port_read_callback(port_read_callback)
+      m_port_read_callback(port_read_callback),
+      m_override_inc(false)
     {
         reset();
     }
@@ -36,6 +39,7 @@ namespace cpu {
         m_instruction_register = 0;
         m_halted = false;
         m_flags = 0;
+        m_override_inc = false;
         for (auto& reg : m_general_purpose_registers)
         {
             reg = 0;
@@ -46,28 +50,41 @@ namespace cpu {
     {
         if (m_halted)
             return;
+        m_override_inc = false;
         m_fetch();
         m_execute();
-        m_program_counter += 8;
+        if (!m_override_inc)
+            m_program_counter += 4;
     }
 
     bool CPU::has_exception(void) const noexcept
     {
-        return (m_instruction_register & II_MASK || m_instruction_register & DZ_MASK) != 0;
+        return (m_flags & II_MASK || m_flags & DZ_MASK) != 0;
     }
 
+    // TODO: Based on endianness, read whole instruction (64 bits)
+    // We're in little endian
     void CPU::m_fetch(void) noexcept
     {
         if (m_halted)
             return;
-        m_instruction_register = m_memory_read_callback(m_program_counter);
+        uint16_t inst_words[4] = { 0 };
+        for (uint16_t i = 0; i < 4; i++)
+        {
+            inst_words[i] = m_memory_read_callback(m_program_counter + i);
+        }
+        m_instruction_register = 0;
+        for (uint16_t i = 0; i < 4; i++)
+        {
+            m_instruction_register |= static_cast<uint64_t>(inst_words[i]) << (i * 16);
+        }
     }
 
     void CPU::m_execute(void) noexcept
     {
         if (m_halted)
             return;
-        uint8_t opcode = static_cast<uint8_t>((m_instruction_register & 0xFF00000000000000) >> 56);
+        uint8_t opcode = static_cast<uint8_t>((m_instruction_register & 0xFF));
         switch (opcode)
         {
             case HALT_OPCODE.opcode:
@@ -277,10 +294,45 @@ namespace cpu {
             case CLF_OPCODE.opcode:
                 m_clf();
                 break;
+            case MSB_OPCODE.opcode:
+                m_msb(static_cast<RegisterNumber>(helper::extract_operand(m_instruction_register, 0)),
+                      static_cast<RegisterNumber>(helper::extract_operand(m_instruction_register, 1)));
+                break;
+            case LSB_OPCODE.opcode:
+                m_lsb(static_cast<RegisterNumber>(helper::extract_operand(m_instruction_register, 0)),
+                      static_cast<RegisterNumber>(helper::extract_operand(m_instruction_register, 1)));
+                break;
+            case OUTI_OPCODE.opcode:
+                m_outi(
+                    helper::extract_operand(m_instruction_register, 0),
+                    helper::extract_operand(m_instruction_register, 1),
+                    static_cast<RegisterNumber>(helper::extract_operand(m_instruction_register, 2))
+                );
+                break;
             default:
                 m_flags = m_flags | II_MASK;
                 m_halt();
                 break;
         }
+    }
+
+    uint16_t CPU::get_program_counter(void) const noexcept
+    {
+        return m_program_counter;
+    }
+
+    const std::array<uint16_t, 8>& CPU::get_registers(void) const noexcept
+    {
+        return m_general_purpose_registers;
+    }
+
+    uint64_t CPU::get_instruction_register(void) const noexcept
+    {
+        return m_instruction_register;
+    }
+
+    bool CPU::is_halted() const noexcept
+    {
+        return this->m_halted;
     }
 }

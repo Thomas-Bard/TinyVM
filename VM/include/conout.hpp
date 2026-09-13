@@ -26,7 +26,7 @@ namespace TinyVM {
 
         class ConOut : public IODevice {
         public:
-            ConOut(uint16_t address, uint16_t width, uint16_t height, std::unique_ptr<console::ConsoleRenderer> renderer);
+            ConOut(uint16_t address, uint16_t width, uint16_t height, std::shared_ptr<console::ConsoleRenderer> renderer);
             void write(uint16_t port, uint16_t value) override;
             uint16_t read(uint16_t port) override;
 
@@ -35,6 +35,8 @@ namespace TinyVM {
             void clear();
             void display();
 
+            void update(void) override;
+
             console::ConsoleRenderer* getRenderer(void);
         private:
             uint16_t _cursorX;
@@ -42,7 +44,7 @@ namespace TinyVM {
             uint16_t _width;
             uint16_t _height;
             std::shared_ptr<char[]> _buffer;
-            std::unique_ptr<console::ConsoleRenderer> _renderer;
+            std::shared_ptr<console::ConsoleRenderer> _renderer;
         };
     }
 }
