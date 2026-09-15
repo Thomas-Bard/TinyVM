@@ -65,7 +65,8 @@
 #define MSB_OPCODE OPCODE("msb", 0x32, 2)
 #define LSB_OPCODE OPCODE("lsb", 0x33, 2)
 
-#define OUTI_OPCODE OPCODE("outi", 0x34, 3)
+/** Immediate versions of instructions **/
+#define OUTI_OPCODE OPCODE("outi", 0x34, 3) // WARNING OP2 (data) is a register, and OP0 (port) and OP1 (address) are immediates
 
 namespace isa
 {
