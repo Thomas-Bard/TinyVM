@@ -46,6 +46,7 @@ add_subdirectory(ASM)
 add_subdirectory(VM)
 add_subdirectory(Console)
 add_subdirectory(Tests)
+add_subdirectory(VM_Lib)
 
 # Generate compile_commands.json symlink at root on first configure
 if(CMAKE_EXPORT_COMPILE_COMMANDS)

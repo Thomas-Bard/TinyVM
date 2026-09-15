@@ -16,14 +16,11 @@ target_include_directories(vm PRIVATE
 
 
 # Link against all libraries
-target_link_libraries(vm PRIVATE common cpu ram console)
+target_link_libraries(vm PRIVATE vm_lib)
 
 # Get include directories from linked libraries
 target_include_directories(vm PRIVATE
-    $<TARGET_PROPERTY:common,INTERFACE_INCLUDE_DIRECTORIES>
-    $<TARGET_PROPERTY:cpu,INTERFACE_INCLUDE_DIRECTORIES>
-    $<TARGET_PROPERTY:ram,INTERFACE_INCLUDE_DIRECTORIES>
-    $<TARGET_PROPERTY:console,INTERFACE_INCLUDE_DIRECTORIES>
+    $<TARGET_PROPERTY:vm_lib,INTERFACE_INCLUDE_DIRECTORIES>
 )
 
 # Compiler options
