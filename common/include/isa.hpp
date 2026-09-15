@@ -68,6 +68,18 @@
 /** Immediate versions of instructions **/
 #define OUTI_OPCODE OPCODE("outi", 0x34, 3) // WARNING OP2 (data) is a register, and OP0 (port) and OP1 (address) are immediates
 
+#define JEI_OPCODE OPCODE("jei", 0x35, 1)
+#define JNEI_OPCODE OPCODE("jnei", 0x36, 1)
+#define JCI_OPCODE OPCODE("jci", 0x37, 1)
+#define JNCI_OPCODE OPCODE("jnci", 0x38, 1)
+#define JZI_OPCODE OPCODE("jzi", 0x39, 1)
+#define JNZI_OPCODE OPCODE("jnzi", 0x3A, 1)
+#define JAI_OPCODE OPCODE("jai", 0x3B, 1)
+#define JAEI_OPCODE OPCODE("jaei", 0x3C, 1)
+#define JBI_OPCODE OPCODE("jbi", 0x3D, 1)
+#define JBEI_OPCODE OPCODE("jbei", 0x3E, 1)
+#define INI_OPCODE OPCODE("ini", 0x3F, 1) // WARNING OPO (destination) is a register, and OP1 (port) and OP2 (address) are immediates
+
 namespace isa
 {
     struct Opcode

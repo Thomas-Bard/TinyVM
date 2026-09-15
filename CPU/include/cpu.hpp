@@ -1,6 +1,7 @@
 #ifndef CPU_HPP
 #define CPU_HPP
 
+#include <SDL3/SDL_events.h>
 #include <cstdint>
 #include <array>
 #include <functional>
@@ -109,6 +110,18 @@ namespace cpu
             void m_lsb(RegisterNumber dest, RegisterNumber src) noexcept;
 
             void m_outi(uint16_t port, uint16_t addr, RegisterNumber data) noexcept;
+            void m_jei(uint16_t addr) noexcept;
+            void m_jnei(uint16_t addr) noexcept;
+            void m_jci(uint16_t addr) noexcept;
+            void m_jnci(uint16_t addr) noexcept;
+            void m_jzi(uint16_t addr) noexcept;
+            void m_jnzi(uint16_t addr) noexcept;
+            void m_jai(uint16_t addr) noexcept;
+            void m_jaei(uint16_t addr) noexcept;
+            void m_jbi(uint16_t addr) noexcept;
+            void m_jbei(uint16_t addr) noexcept;
+            void m_ini(RegisterNumber dest, uint16_t port, uint16_t addr) noexcept;
+
             // == Helper functions ==
             void m_reset(void) noexcept;
             void m_fetch(void) noexcept;

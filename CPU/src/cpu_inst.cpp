@@ -924,4 +924,76 @@ namespace cpu
         }
         m_port_write_callback(static_cast<uint8_t>(port), addr, m_general_purpose_registers[data]);
     }
+
+    void CPU::m_jei(uint16_t addr) noexcept
+    {
+        if (m_flags & ZF_MASK)
+            m_jmpi(addr);
+    }
+
+    void CPU::m_jnei(uint16_t addr) noexcept
+    {
+        if (!(m_flags & ZF_MASK))
+            m_jmpi(addr);
+    }
+
+    void CPU::m_jci(uint16_t addr) noexcept
+    {
+        if (m_flags & CF_MASK)
+            m_jmpi(addr);
+    }
+
+    void CPU::m_jnci(uint16_t addr) noexcept
+    {
+        if (!(m_flags & CF_MASK))
+            m_jmpi(addr);
+    }
+
+    void CPU::m_jzi(uint16_t addr) noexcept
+    {
+        if (m_flags & ZF_MASK)
+            m_jmpi(addr);
+    }
+
+    void CPU::m_jnzi(uint16_t addr) noexcept
+    {
+        if (!(m_flags & ZF_MASK))
+            m_jmpi(addr);
+    }
+
+    void CPU::m_jai(uint16_t addr) noexcept
+    {
+        if (!(m_flags & CF_MASK) && !(m_flags & ZF_MASK))
+            m_jmpi(addr);
+    }
+
+    void CPU::m_jaei(uint16_t addr) noexcept
+    {
+        if (!(m_flags & CF_MASK))
+            m_jmpi(addr);
+    }
+
+    void CPU::m_jbi(uint16_t addr) noexcept
+    {
+        if ((m_flags & CF_MASK) && !(m_flags & ZF_MASK))
+            m_jmpi(addr);
+    }
+
+    void CPU::m_jbei(uint16_t addr) noexcept
+    {
+        if ((m_flags & CF_MASK))
+            m_jmpi(addr);
+    }
+
+    void CPU::m_ini(RegisterNumber dest, uint16_t port, uint16_t addr) noexcept
+    {
+        if (dest >= m_general_purpose_registers.size())
+        {
+            m_flags |= II_MASK;
+            m_halt();
+            return;
+        }
+        uint16_t input = m_port_read_callback(static_cast<uint8_t>(port), addr);
+        m_general_purpose_registers[dest] = input;
+    }
 }

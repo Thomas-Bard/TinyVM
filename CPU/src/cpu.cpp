@@ -309,6 +309,43 @@ namespace cpu {
                     static_cast<RegisterNumber>(helper::extract_operand(m_instruction_register, 2))
                 );
                 break;
+            case JEI_OPCODE.opcode:
+                m_jei(helper::extract_operand(m_instruction_register, 0));
+                break;
+            case JNEI_OPCODE.opcode:
+                m_jnei(helper::extract_operand(m_instruction_register, 0));
+                break;
+            case JCI_OPCODE.opcode:
+                m_jci(helper::extract_operand(m_instruction_register, 0));
+                break;
+            case JNCI_OPCODE.opcode:
+                m_jnci(helper::extract_operand(m_instruction_register, 0));
+                break;
+            case JZI_OPCODE.opcode:
+                m_jzi(helper::extract_operand(m_instruction_register, 0));
+                break;
+            case JNZI_OPCODE.opcode:
+                m_jnzi(helper::extract_operand(m_instruction_register, 0));
+                break;
+            case JAI_OPCODE.opcode:
+                m_jai(helper::extract_operand(m_instruction_register, 0));
+                break;
+            case JAEI_OPCODE.opcode:
+                m_jaei(helper::extract_operand(m_instruction_register, 0));
+                break;
+            case JBI_OPCODE.opcode:
+                m_jbi(helper::extract_operand(m_instruction_register, 0));
+                break;
+            case JBEI_OPCODE.opcode:
+                m_jbei(helper::extract_operand(m_instruction_register, 0));
+                break;
+            case INI_OPCODE.opcode:
+                m_ini(
+                    static_cast<RegisterNumber>(helper::extract_operand(m_instruction_register, 0)),
+                    helper::extract_operand(m_instruction_register, 1),
+                    helper::extract_operand(m_instruction_register, 2)
+                );
+                break;
             default:
                 m_flags = m_flags | II_MASK;
                 m_halt();
