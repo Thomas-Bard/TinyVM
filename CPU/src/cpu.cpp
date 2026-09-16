@@ -1,4 +1,5 @@
 #include "cpu.hpp"
+#include "mmio_device.hpp"
 
 #define CF_MASK 0b0000001
 #define ZF_MASK 0b0000010
@@ -27,6 +28,7 @@ namespace cpu {
       m_memory_read_callback(memory_read_callback),
       m_port_write_callback(port_write_callback),
       m_port_read_callback(port_read_callback),
+      m_iommu(memory_read_callback, memory_write_callback),
       m_override_inc(false)
     {
         reset();
@@ -346,6 +348,9 @@ namespace cpu {
                     helper::extract_operand(m_instruction_register, 2)
                 );
                 break;
+            case LIOMMU_OPCODE.opcode:
+                m_liommu(static_cast<RegisterNumber>(helper::extract_operand(m_instruction_register, 0)));
+                break;
             default:
                 m_flags = m_flags | II_MASK;
                 m_halt();
@@ -371,5 +376,14 @@ namespace cpu {
     bool CPU::is_halted() const noexcept
     {
         return this->m_halted;
+    }
+
+    void CPU::plug_mmio_device(uint16_t port, IOMMU::devices::MMIO_Device* device) const noexcept
+    {
+        if (!device)
+            return;
+        device->set_iommu_read_callback([&](uint16_t port, uint16_t addr) { return m_iommu.device_read(port, addr); });
+        device->set_iommu_write_callback([&](uint16_t port, uint16_t addr, uint16_t data) { m_iommu.device_write(port, addr, data); });
+        device->set_port(port);
     }
 }

@@ -80,6 +80,8 @@
 #define JBEI_OPCODE OPCODE("jbei", 0x3E, 1)
 #define INI_OPCODE OPCODE("ini", 0x3F, 1) // WARNING OPO (destination) is a register, and OP1 (port) and OP2 (address) are immediates
 
+#define LIOMMU_OPCODE OPCODE("liommu", 0x40, 1)
+
 namespace isa
 {
     struct Opcode

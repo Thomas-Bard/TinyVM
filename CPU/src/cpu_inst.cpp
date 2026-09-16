@@ -996,4 +996,15 @@ namespace cpu
         uint16_t input = m_port_read_callback(static_cast<uint8_t>(port), addr);
         m_general_purpose_registers[dest] = input;
     }
+
+    void CPU::m_liommu(RegisterNumber header_addr) noexcept
+    {
+        if (header_addr >= m_general_purpose_registers.size())
+        {
+            m_flags |= II_MASK;
+            m_halt();
+            return;
+        }
+        m_iommu.p_cpu_load_table_addr(m_general_purpose_registers[header_addr]);
+    }
 }

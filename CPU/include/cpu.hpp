@@ -4,16 +4,15 @@
 #include <SDL3/SDL_events.h>
 #include <cstdint>
 #include <array>
-#include <functional>
+#include <memory>
+
+
+#include "iommu.hpp"
+#include "cpu_commons.hpp"
+#include "mmio_device.hpp"
 
 namespace cpu
 {
-    typedef std::function<void(uint16_t addr, uint16_t data)> MemoryWriteCallback;
-    typedef std::function<uint16_t(uint16_t addr)> MemoryReadCallback;
-
-    typedef std::function<void(uint8_t port, uint16_t addr, uint16_t data)> PortWriteCallback;
-    typedef std::function<uint16_t(uint8_t port, uint16_t addr)> PortReadCallback;
-
     typedef uint8_t RegisterNumber;
 
     constexpr uint16_t RESET_VECTOR = 0xFFFC;
@@ -33,18 +32,25 @@ namespace cpu
             uint16_t get_program_counter(void) const noexcept;
             const std::array<uint16_t, 8>& get_registers(void) const noexcept;
             uint64_t get_instruction_register(void) const noexcept;
+
+            // Links a MMIO device to the internal's IOMMU. Sets callbacks and port in the device
+            // IOMMU configuration has to be done by the loaded program, this function just sets the correct callbacks in the given device
+            void plug_mmio_device(uint16_t port, IOMMU::devices::MMIO_Device* device) const noexcept;
         private:
             std::array<uint16_t, 8> m_general_purpose_registers;
-            uint16_t m_program_counter;
-            uint16_t m_stack_pointer;
-            uint64_t m_instruction_register;
-            uint16_t m_flags;
 
             MemoryWriteCallback m_memory_write_callback;
             MemoryReadCallback m_memory_read_callback;
 
             PortWriteCallback m_port_write_callback;
             PortReadCallback m_port_read_callback;
+
+            IOMMU::IOMMU m_iommu;
+
+            uint16_t m_program_counter;
+            uint16_t m_stack_pointer;
+            uint64_t m_instruction_register;
+            uint16_t m_flags;
 
             bool m_halted;
             bool m_override_inc;
@@ -121,6 +127,8 @@ namespace cpu
             void m_jbi(uint16_t addr) noexcept;
             void m_jbei(uint16_t addr) noexcept;
             void m_ini(RegisterNumber dest, uint16_t port, uint16_t addr) noexcept;
+
+            void m_liommu(RegisterNumber header_location) noexcept;
 
             // == Helper functions ==
             void m_reset(void) noexcept;
