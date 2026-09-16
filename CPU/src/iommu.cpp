@@ -1,6 +1,8 @@
 #include "iommu.hpp"
 #include "cpu_commons.hpp"
 
+#include <iostream>
+
 
 namespace cpu::IOMMU
 {
@@ -43,6 +45,12 @@ namespace cpu::IOMMU
             table_entry.base_addr = m_memory_read(table_addr + entry * IOMMU_TABLE_ENTRY_SIZE + IOMMU_ENTRY_DEVICE_ADDR_OFFSET);
             table_entry.port = m_memory_read(table_addr + entry * IOMMU_TABLE_ENTRY_SIZE + IOMMU_ENTRY_DEVICE_PORT_OFFSET);
             table_entry.segment_size = m_memory_read(table_addr + entry * IOMMU_TABLE_ENTRY_SIZE + IOMMU_ENTRY_DEVICE_SIZE_OFFSET);
+
+            if ((uint32_t)table_entry.base_addr + table_entry.segment_size > 0xFFFF)
+            {
+                std::cerr << "[WARNING] | IOMMU | CPU tried to map an invalid memory region to device " << table_entry.port << " device will not be registered !" << std::endl;
+                continue;
+            }
 
             m_mmio_table_lookup[table_entry.port] = table_entry;
         }
