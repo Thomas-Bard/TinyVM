@@ -1,6 +1,7 @@
 #ifndef CPU_HPP
 #define CPU_HPP
 
+#include <SDL3/SDL_events.h>
 #include <cstdint>
 #include <array>
 #include <functional>
@@ -29,6 +30,9 @@ namespace cpu
             bool has_exception(void) const noexcept;
             bool is_halted(void) const noexcept;
             void reset(void) noexcept;
+            uint16_t get_program_counter(void) const noexcept;
+            const std::array<uint16_t, 8>& get_registers(void) const noexcept;
+            uint64_t get_instruction_register(void) const noexcept;
         private:
             std::array<uint16_t, 8> m_general_purpose_registers;
             uint16_t m_program_counter;
@@ -43,6 +47,7 @@ namespace cpu
             PortReadCallback m_port_read_callback;
 
             bool m_halted;
+            bool m_override_inc;
 
             // == Instructions implementations ==
 
@@ -100,6 +105,22 @@ namespace cpu
             void m_cmp(RegisterNumber reg1, RegisterNumber reg2) noexcept;
             void m_test(RegisterNumber reg1, RegisterNumber reg2) noexcept;
             void m_clf() noexcept;
+
+            void m_msb(RegisterNumber dest, RegisterNumber src) noexcept;
+            void m_lsb(RegisterNumber dest, RegisterNumber src) noexcept;
+
+            void m_outi(uint16_t port, uint16_t addr, RegisterNumber data) noexcept;
+            void m_jei(uint16_t addr) noexcept;
+            void m_jnei(uint16_t addr) noexcept;
+            void m_jci(uint16_t addr) noexcept;
+            void m_jnci(uint16_t addr) noexcept;
+            void m_jzi(uint16_t addr) noexcept;
+            void m_jnzi(uint16_t addr) noexcept;
+            void m_jai(uint16_t addr) noexcept;
+            void m_jaei(uint16_t addr) noexcept;
+            void m_jbi(uint16_t addr) noexcept;
+            void m_jbei(uint16_t addr) noexcept;
+            void m_ini(RegisterNumber dest, uint16_t port, uint16_t addr) noexcept;
 
             // == Helper functions ==
             void m_reset(void) noexcept;

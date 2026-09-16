@@ -12,14 +12,15 @@ target_include_directories(vm PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
+# Find SDL3 and SDL3_ttf libraries
+
+
 # Link against all libraries
-target_link_libraries(vm PRIVATE common cpu ram)
+target_link_libraries(vm PRIVATE vm_lib)
 
 # Get include directories from linked libraries
 target_include_directories(vm PRIVATE
-    $<TARGET_PROPERTY:common,INTERFACE_INCLUDE_DIRECTORIES>
-    $<TARGET_PROPERTY:cpu,INTERFACE_INCLUDE_DIRECTORIES>
-    $<TARGET_PROPERTY:ram,INTERFACE_INCLUDE_DIRECTORIES>
+    $<TARGET_PROPERTY:vm_lib,INTERFACE_INCLUDE_DIRECTORIES>
 )
 
 # Compiler options
