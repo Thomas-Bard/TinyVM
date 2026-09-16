@@ -1,6 +1,6 @@
 # TinyVM — Instruction Set Architecture Reference
 
-> **Source files:** `common/include/isa.hpp` · `CPU/src/cpu_inst.cpp` · `CPU/src/cpu.cpp`
+> **Source files:** `common/include/isa.hpp` · `CPU/src/cpu_inst.cpp` · `CPU/src/cpu.cpp` · `CPU/src/iommu.cpp` · `CPU/include/iommu.hpp` · `CPU/include/mmio_device.hpp`
 
 ---
 
@@ -10,6 +10,7 @@
 2. [Registers](#2-registers)
 3. [Flags Register](#3-flags-register)
 4. [Memory Model](#4-memory-model)
+   - [4.1 Memory-Mapped I/O and the IOMMU](#41-memory-mapped-io-and-the-iommu)
 5. [Instruction Encoding](#5-instruction-encoding)
 6. [CPU Lifecycle](#6-cpu-lifecycle)
 7. [Exceptions & Halting](#7-exceptions--halting)
@@ -25,6 +26,7 @@
    - [Byte Extraction](#89-byte-extraction)
    - [Control Flow](#810-control-flow)
    - [System](#811-system)
+      - [`liommu` — Load IOMMU Table](#liommu--load-iommu-table)
 9. [Opcode Table](#9-opcode-table)
 10. [Flag Summary by Instruction Group](#10-flag-summary-by-instruction-group)
 
@@ -106,6 +108,85 @@ The stack is a **downward-growing** structure managed by SP:
 - **PUSH** pre-decrements SP: stores the register value at `mem[SP − 1]`, then SP becomes `SP − 1`.
 - **POP** post-increments SP: reads from `mem[SP]` into the register, then SP becomes `SP + 1`.
 - SP is initialized to `0x0000` on reset; the first push targets `mem[0xFFFF]`.
+
+---
+
+### 4.1 Memory-Mapped I/O and the IOMMU
+
+The CPU contains an internal **I/O Memory Management Unit (IOMMU)** that provides a second way to communicate with peripheral devices, complementing the existing port I/O instructions (`out`/`in`). With MMIO, a device's address space is **mapped into a contiguous window of the CPU's physical memory**. Both the CPU program and the device then communicate by reading and writing ordinary memory addresses that fall inside that window.
+
+#### Concept
+
+```
+ Physical memory
+ ┌─────────────────────┐
+ │  ... program ...    │
+ ├─────────────────────┤ ◄─ base_addr
+ │                     │
+ │   MMIO window       │  ← device reads/writes here via IOMMU
+ │   (segment_size     │
+ │    words)           │
+ │                     │
+ ├─────────────────────┤ ◄─ base_addr + segment_size − 1
+ │  ... other data ... │
+ └─────────────────────┘
+```
+
+Each mapping associates a **device port number** with a **base address** and **segment size** in physical memory. When the device performs a read or write at a *virtual* address `V`, the IOMMU translates it to physical address `base_addr + V` — provided `V < segment_size`. Out-of-bounds accesses are silently discarded (writes) or return `0` (reads). Attempting to map a region where `base_addr + segment_size > 0xFFFF` is rejected at load time.
+
+#### IOMMU Table Format
+
+The IOMMU is configured at runtime by placing a table structure in memory and executing the `liommu` instruction. The table has two parts:
+
+**Header** (2 words, at the address passed to `liommu`):
+
+| Word offset | Constant | Value |
+|-------------|----------|-------|
+| `+0` | `IOMMU_HEADER_TABLE_ADDR_OFFSET` | Address of the entry table |
+| `+1` | `IOMMU_HEADER_TABLE_SZ_OFFSET` | Number of entries in the table |
+
+**Entry table** (3 words per entry, starting at the address given in the header):
+
+| Word offset within entry | Constant | Value |
+|--------------------------|----------|-------|
+| `+0` | `IOMMU_ENTRY_DEVICE_PORT_OFFSET` | Device port number |
+| `+1` | `IOMMU_ENTRY_DEVICE_ADDR_OFFSET` | Base address in physical memory |
+| `+2` | `IOMMU_ENTRY_DEVICE_SIZE_OFFSET` | Segment size in words |
+
+> **Table size** is expressed in **entries**, not words. The total word footprint of the entry table is `entry_count × 3`.
+
+#### Example Layout
+
+```
+mem[0x0100]  =  0x0102        ; header word 0: entry table starts at 0x0102
+mem[0x0101]  =  2             ; header word 1: 2 entries
+
+; Entry 0 — port 0x05 mapped at physical 0x0200, size 0x0010
+mem[0x0102]  =  0x0005        ; port
+mem[0x0103]  =  0x0200        ; base address
+mem[0x0104]  =  0x0010        ; segment size
+
+; Entry 1 — port 0x07 mapped at physical 0x0400, size 0x0040
+mem[0x0105]  =  0x0007        ; port
+mem[0x0106]  =  0x0400        ; base address
+mem[0x0107]  =  0x0040        ; segment size
+
+    movi RA, 0x0100
+    liommu RA              ; activate the mapping above
+```
+
+#### Address Translation
+
+For a device on port `P` performing an access at virtual address `V`:
+
+1. Look up port `P` in the IOMMU table. If not found → return `0` / discard write.
+2. If `V ≥ segment_size` → return `0` / discard write (out of bounds).
+3. Translate: `physical = base_addr + V`.
+4. Perform the read/write on physical memory.
+
+#### Reloading the Table
+
+Every call to `liommu` **clears the existing mapping table entirely** before parsing the new one. To update the IOMMU configuration, write a new table in memory and call `liommu` again.
 
 ---
 
@@ -890,6 +971,34 @@ Cleanly stops the CPU. The halted state is not an error; `has_exception()` retur
 
 ---
 
+#### `liommu` — Load IOMMU Table
+
+| | |
+|--|--|
+| **Opcode** | `0x40` |
+| **Operands** | `Ra` |
+| **Operation** | Parse IOMMU mapping table from memory at the address held in `Ra` |
+| **Flags** | II (on invalid register) |
+
+Instructs the CPU's internal IOMMU to read and activate a new device-to-memory mapping table from physical memory. `Ra` must hold the **header address** — the address of the two-word IOMMU header in memory (see §4.1 for the full table format).
+
+**Execution sequence:**
+1. The IOMMU clears its current mapping table.
+2. It reads `mem[Ra]` to get the entry table base address.
+3. It reads `mem[Ra + 1]` to get the number of entries.
+4. For each entry `i` (0-indexed), it reads three consecutive words starting at `table_base + i * 3`:
+   - `[+0]` → device port number
+   - `[+1]` → physical base address of the mapped window
+   - `[+2]` → segment size in words
+5. Each entry whose region `[base, base + size)` would exceed `0xFFFF` is **silently skipped**.
+6. All valid entries are activated immediately.
+
+After `liommu` returns, devices mapped to a port can read and write through their assigned physical memory window. Calling `liommu` again replaces the entire mapping table.
+
+> If `Ra` is an invalid register number, **II** is set and the CPU halts.
+
+---
+
 ## 9. Opcode Table
 
 | Opcode | Mnemonic | Operands | Description |
@@ -957,7 +1066,8 @@ Cleanly stops the CPU. The halted state is not an error; `has_exception()` retur
 | `0x3C` | `jaei` | imm | Jump if !CF (above or equal, immediate) |
 | `0x3D` | `jbi` | imm | Jump if CF && !ZF (below, immediate) |
 | `0x3E` | `jbei` | imm | Jump if CF (immediate, see note §8.10) |
-| `0x3F` | `ini` | Rdest, port_imm, addr_imm | Read from port (imm port & addr, reg dest) |
+| `0x3F` | `ini` | `Rdest, port_imm, addr_imm` | Read from port (imm port & addr, reg dest) |
+| `0x40` | `liommu` | `Ra` | Load IOMMU mapping table from address in `Ra` |
 
 ---
 
@@ -985,6 +1095,7 @@ Cleanly stops the CPU. The halted state is not an error; `has_exception()` retur
 | `jmp`, `jmpi`, all conditional jumps | — | — | — | — | — | ✓* |
 | `halt` | — | — | — | — | — | — |
 | `msb`, `lsb` | — | — | — | — | — | ✓ |
+| `liommu` | — | — | — | — | — | ✓ |
 
 **Legend:**
 - ✓ = may be set by this instruction
