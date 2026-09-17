@@ -9,28 +9,21 @@
 
 namespace ASM::Tokens
 {
-    struct Token
+    enum class TokenKind
     {
-        enum class TokenType
-        {
-            IDENTIFIER,
-            INSTRUCTION,
-            REGISTER,
-            NUMBER,
-            NUMBER_HEX,
-            COMMA,
-            DECLARE_WORD,
-            DECLARE_STRING,
-            STRING,
-            LABEL_DECL,
-            EOL,
-            EoF,
-        };
-        uint64_t line_number;
-        uint64_t column_number;
-        std::string value;
-        TokenType type;
+        INDENTIFIER,
+        INSTRUCTION,
+        REGISTER,
+        DECL,
+        STRING,
+        NUMBER,
+        COMMA,
+        COLON,
+        NEW_LINE,
+        END_FILE,
     };
+
+
 
     enum class OperandTypes
     {
@@ -53,6 +46,20 @@ namespace ASM::Tokens
         std::string mnemonic;
         uint8_t identifier;
         bool is_grp;
+    };
+
+    struct Token
+    {
+        TokenKind kind;
+        union
+        {
+            std::string str;
+            uint16_t number;
+            Instruction instruction;
+            AddressableRegister reg;
+        };
+        uint64_t line;
+        uint64_t col;
     };
 
     void init_instructions(void);

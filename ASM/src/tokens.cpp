@@ -82,7 +82,7 @@ namespace ASM::Tokens
         oprri("mulsi", 0x10);
         opr("inc", 0x11);
         opr("dec", 0x12);
-        oprr("mov", 0x13);
+        op("mov", 0x13, 2, OperandTypes::REGSP, OperandTypes::REGSP, OperandTypes::NONE);
         opri("movi", 0x14);
         oprr("str", 0x15);
         opri("stri", 0x16);
