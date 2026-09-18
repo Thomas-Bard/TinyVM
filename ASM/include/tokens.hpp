@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <string>
 #include <cstdint>
+#include <variant>
 
 /** TODO REDO ALL OF THE TOKENS AND LEXER **/
 
@@ -51,13 +52,13 @@ namespace ASM::Tokens
     struct Token
     {
         TokenKind kind;
-        union
-        {
-            std::string str;
-            uint16_t number;
-            Instruction instruction;
-            AddressableRegister reg;
-        };
+        std::variant<
+
+            std::string,
+            uint16_t,
+            Instruction,
+            AddressableRegister
+        > value;
         uint64_t line;
         uint64_t col;
     };
